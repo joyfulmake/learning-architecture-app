@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AppStateProvider } from "./providers";
 import { NavTabs } from "@/components/NavTabs";
+import { ZenithSidebar } from "@/components/ZenithSidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,7 +30,10 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-white text-gray-900">
         <AppStateProvider>
           <NavTabs />
-          <main className="flex-1 mx-auto w-full max-w-5xl px-6 py-8">{children}</main>
+          <div className="flex-1 mx-auto w-full max-w-6xl px-6 py-8 flex flex-col lg:flex-row gap-10">
+            <main className="flex-1 min-w-0">{children}</main>
+            <ZenithSidebar />
+          </div>
         </AppStateProvider>
       </body>
     </html>

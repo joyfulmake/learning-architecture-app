@@ -3,9 +3,9 @@
 import type { ArchitectureNode, NodeReference, NodeStatus } from "@/lib/types";
 
 const STATUS_STYLES: Record<NodeStatus, string> = {
-  locked: "border-gray-300 bg-gray-100 opacity-60 cursor-not-allowed",
-  ready: "border-green-400 bg-green-50 shadow-[0_0_0_3px_rgba(22,163,74,0.12)] cursor-pointer",
-  completed: "border-green-600 bg-green-100 shadow-[0_0_0_3px_rgba(22,163,74,0.2)] cursor-pointer",
+  locked: "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed",
+  ready: "border-green-400 bg-gradient-to-br from-green-50 to-white shadow-[0_0_0_3px_rgba(22,163,74,0.12)] cursor-pointer",
+  completed: "border-green-600 bg-gradient-to-br from-green-100 to-green-50 shadow-[0_0_0_3px_rgba(22,163,74,0.22)] cursor-pointer",
 };
 
 export function NodeCard({
@@ -20,7 +20,7 @@ export function NodeCard({
   onToggle: () => void;
 }) {
   return (
-    <div className={`rounded-xl border-2 p-4 transition ${STATUS_STYLES[status]}`}>
+    <div id={`node-${node.id}`} className={`rounded-2xl border-2 p-4 transition ${STATUS_STYLES[status]}`}>
       <label className="flex items-start gap-3">
         <input
           type="checkbox"

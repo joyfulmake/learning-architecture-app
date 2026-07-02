@@ -5,12 +5,11 @@ import { useAppState } from "@/app/providers";
 import { ArchitectureMapView } from "@/components/ArchitectureMapView";
 
 export default function ArchitecturePage() {
-  const { maps, createMap, toggleNode } = useAppState();
+  const { maps, activeMapId, setActiveMapId, createMap, toggleNode } = useAppState();
   const [topic, setTopic] = useState("");
   const [loading, setLoading] = useState(false);
-  const [selectedMapId, setSelectedMapId] = useState<string | null>(null);
 
-  const selectedMap = maps.find((m) => m.id === selectedMapId) ?? maps[maps.length - 1];
+  const selectedMap = maps.find((m) => m.id === activeMapId) ?? maps[maps.length - 1];
 
   async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
@@ -18,8 +17,7 @@ export default function ArchitecturePage() {
     if (!trimmed) return;
     setLoading(true);
     try {
-      const map = await createMap(trimmed);
-      setSelectedMapId(map.id);
+      await createMap(trimmed);
       setTopic("");
     } finally {
       setLoading(false);
@@ -28,7 +26,10 @@ export default function ArchitecturePage() {
 
   return (
     <div>
-      <form onSubmit={handleGenerate} className="flex gap-3 mb-8">
+      <h1 className="text-2xl font-extrabold">Turn any topic into a climbable map.</h1>
+      <p className="mt-1 text-sm text-gray-500">Type a topic, build it phase by phase, unlock the next step by finishing the last.</p>
+
+      <form onSubmit={handleGenerate} className="flex gap-3 mt-6 mb-8">
         <input
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
@@ -49,7 +50,7 @@ export default function ArchitecturePage() {
           {maps.map((m) => (
             <button
               key={m.id}
-              onClick={() => setSelectedMapId(m.id)}
+              onClick={() => setActiveMapId(m.id)}
               className={`px-3 py-1.5 rounded-full text-sm font-bold border-2 transition ${
                 m.id === selectedMap?.id
                   ? "border-gray-900 bg-gray-900 text-white"

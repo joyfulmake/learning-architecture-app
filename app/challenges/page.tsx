@@ -2,59 +2,93 @@
 
 import { useState } from "react";
 import { useAppState } from "@/app/providers";
-import { ChallengeView } from "@/components/ChallengeView";
+import { ImplementationPicker } from "@/components/ImplementationPicker";
+import { IterationChecklist } from "@/components/IterationChecklist";
+import { IterationPracticeCard } from "@/components/IterationPracticeCard";
+import { IterationQuizCard } from "@/components/IterationQuizCard";
+import { ImplementationRunSummary } from "@/components/ImplementationRunSummary";
+import type { ImplementationRun, Implementation } from "@/lib/types";
+
+function IterationFlow({ run }: { run: ImplementationRun }) {
+  const { submitIterationPractice, submitQuizAttempt, advanceIteration } = useAppState();
+  const [showQuiz, setShowQuiz] = useState(false);
+  const iteration = run.iterations[run.currentIterationIndex];
+
+  return (
+    <div className="flex flex-col gap-5">
+      <IterationChecklist run={run} />
+
+      <IterationPracticeCard
+        iteration={iteration}
+        onPick={(label) => submitIterationPractice(run.id, iteration.index, label)}
+      />
+
+      {iteration.status === "practiced" && !showQuiz && (
+        <button
+          onClick={() => setShowQuiz(true)}
+          className="self-start px-5 py-2.5 rounded-full bg-gray-900 text-white font-bold text-sm hover:bg-gray-700 transition"
+        >
+          Take the 5-question check →
+        </button>
+      )}
+
+      {(showQuiz || iteration.status === "quizzed") && (
+        <IterationQuizCard
+          iteration={iteration}
+          onSubmit={(answers) => submitQuizAttempt(run.id, iteration.index, answers)}
+          onContinue={() => advanceIteration(run.id)}
+        />
+      )}
+    </div>
+  );
+}
 
 export default function ChallengesPage() {
-  const { maps, challenges, startChallenge, answerStage } = useAppState();
-  const [selectedLabel, setSelectedLabel] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { maps, activeMapId, implementationsBySlug, implementationRuns, startImplementationRun } = useAppState();
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
+  const [pickingNew, setPickingNew] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  const subtopics = maps.flatMap((m) => m.nodes.map((n) => n.label));
-  const activeRun = challenges.find((r) => r.id === activeRunId) ?? challenges[challenges.length - 1];
+  const activeMap = maps.find((m) => m.id === activeMapId) ?? maps[maps.length - 1];
+  const implementations = activeMap ? implementationsBySlug[activeMap.slug] : undefined;
+  const runsForTopic = activeMap
+    ? implementationRuns.filter((r) => r.implementation.topicSlug === activeMap.slug)
+    : [];
+  const activeRun = runsForTopic.find((r) => r.id === activeRunId) ?? runsForTopic[runsForTopic.length - 1];
 
-  async function handleStart(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selectedLabel) return;
+  async function handleStart(implementation: Implementation, totalIterations: number) {
     setLoading(true);
     try {
-      const run = await startChallenge(selectedLabel);
+      const run = await startImplementationRun(implementation, totalIterations);
       setActiveRunId(run.id);
+      setPickingNew(false);
     } finally {
       setLoading(false);
     }
   }
 
+  if (!activeMap) {
+    return (
+      <div>
+        <h1 className="text-2xl font-extrabold">Design it once. Make it instinct.</h1>
+        <p className="mt-3 text-gray-500 text-base">
+          Generate an architecture map on the Architecture tab first — the practice reps below are built
+          around that topic.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div>
-      <form onSubmit={handleStart} className="flex gap-3 mb-8">
-        <select
-          value={selectedLabel}
-          onChange={(e) => setSelectedLabel(e.target.value)}
-          className="flex-1 rounded-full border-2 border-gray-300 px-5 py-3 text-base font-medium focus:outline-none focus:border-green-500 disabled:opacity-40"
-          disabled={subtopics.length === 0}
-        >
-          <option value="">
-            {subtopics.length === 0 ? "Generate an architecture map first" : "Pick a subtopic…"}
-          </option>
-          {subtopics.map((label) => (
-            <option key={label} value={label}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <button
-          type="submit"
-          disabled={loading || !selectedLabel}
-          className="px-6 py-3 rounded-full bg-gray-900 text-white font-bold text-base disabled:opacity-40 hover:bg-gray-700 transition"
-        >
-          {loading ? "Building scenario…" : "Start challenge"}
-        </button>
-      </form>
+      <h1 className="text-2xl font-extrabold">Design it once. Make it instinct.</h1>
+      <p className="mt-1 text-sm text-gray-500">
+        Pick a real-world angle on {activeMap.topic}, drill it in reps, one new factor each time.
+      </p>
 
-      {challenges.length > 1 && (
-        <div className="flex gap-2 mb-6 flex-wrap">
-          {challenges.map((run) => (
+      {!pickingNew && runsForTopic.length > 1 && (
+        <div className="flex gap-2 mt-5 mb-2 flex-wrap">
+          {runsForTopic.map((run) => (
             <button
               key={run.id}
               onClick={() => setActiveRunId(run.id)}
@@ -64,22 +98,29 @@ export default function ChallengesPage() {
                   : "border-gray-300 text-gray-600 hover:border-gray-500"
               }`}
             >
-              {run.challenge.subtopicLabel}
+              {run.implementation.angle}
             </button>
           ))}
         </div>
       )}
 
-      {activeRun ? (
-        <ChallengeView
-          run={activeRun}
-          onAnswer={(stageId, choiceLabel) => answerStage(activeRun.id, stageId, choiceLabel)}
-        />
-      ) : (
-        <p className="text-gray-500 text-base">
-          Pick a subtopic from an architecture map to get a branching judgment scenario.
-        </p>
-      )}
+      <div className="mt-6">
+        {pickingNew || !activeRun ? (
+          !implementations ? (
+            <p className="text-gray-500 text-base">Generating implementations for this topic…</p>
+          ) : (
+            <ImplementationPicker implementations={implementations} loading={loading} onStart={handleStart} />
+          )
+        ) : activeRun.finished ? (
+          <ImplementationRunSummary
+            run={activeRun}
+            onPickAnother={() => setPickingNew(true)}
+            onRunAgain={() => handleStart(activeRun.implementation, activeRun.totalIterations)}
+          />
+        ) : (
+          <IterationFlow key={`${activeRun.id}-${activeRun.currentIterationIndex}`} run={activeRun} />
+        )}
+      </div>
     </div>
   );
 }

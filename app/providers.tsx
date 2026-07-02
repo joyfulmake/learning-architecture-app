@@ -1,34 +1,84 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import { makeId } from "@/lib/id";
+import { slugify } from "@/lib/id";
 import {
+  buildImplementationRun,
   generateArchitectureMap,
-  generateChallenge,
+  generateImplementations,
   generateReferences,
+  generateZenithReference,
 } from "@/lib/mockGenerate";
-import type { ArchitectureMap, ChallengeRun, StageState } from "@/lib/types";
+import {
+  buildArchitectureMapFromPayload,
+  buildZenithFromPayload,
+  tryGenerateArchitectureViaApi,
+} from "@/lib/realGenerate";
+import type {
+  ArchitectureMap,
+  Implementation,
+  ImplementationRun,
+  QuizAttempt,
+  ZenithReference,
+} from "@/lib/types";
 
 interface AppState {
   maps: ArchitectureMap[];
-  challenges: ChallengeRun[];
+  activeMapId: string | null;
+  setActiveMapId: (id: string) => void;
+  zenithsBySlug: Record<string, ZenithReference>;
+  implementationsBySlug: Record<string, Implementation[]>;
+  implementationRuns: ImplementationRun[];
   createMap: (topic: string) => Promise<ArchitectureMap>;
   toggleNode: (mapId: string, nodeId: string) => Promise<void>;
-  startChallenge: (subtopicLabel: string) => Promise<ChallengeRun>;
-  answerStage: (runId: string, stageId: string, choiceLabel: string) => void;
+  startImplementationRun: (implementation: Implementation, totalIterations: number) => Promise<ImplementationRun>;
+  submitIterationPractice: (runId: string, iterationIndex: number, choiceLabel: string) => void;
+  submitQuizAttempt: (runId: string, iterationIndex: number, answers: number[]) => void;
+  advanceIteration: (runId: string) => void;
 }
 
 const AppStateContext = createContext<AppState | null>(null);
 
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [maps, setMaps] = useState<ArchitectureMap[]>([]);
-  const [challenges, setChallenges] = useState<ChallengeRun[]>([]);
+  const [activeMapId, setActiveMapId] = useState<string | null>(null);
+  const [zenithsBySlug, setZenithsBySlug] = useState<Record<string, ZenithReference>>({});
+  const [implementationsBySlug, setImplementationsBySlug] = useState<Record<string, Implementation[]>>({});
+  const [implementationRuns, setImplementationRuns] = useState<ImplementationRun[]>([]);
 
-  const createMap = useCallback(async (topic: string) => {
-    const map = await generateArchitectureMap(topic);
-    setMaps((prev) => [...prev, map]);
-    return map;
+  const ensureZenith = useCallback(async (topic: string) => {
+    const slug = slugify(topic);
+    const zenith = await generateZenithReference(topic);
+    setZenithsBySlug((prev) => (prev[slug] ? prev : { ...prev, [slug]: zenith }));
   }, []);
+
+  const ensureImplementations = useCallback(async (topic: string) => {
+    const slug = slugify(topic);
+    const implementations = await generateImplementations(topic);
+    setImplementationsBySlug((prev) => (prev[slug] ? prev : { ...prev, [slug]: implementations }));
+  }, []);
+
+  const createMap = useCallback(
+    async (topic: string) => {
+      const realPayload = await tryGenerateArchitectureViaApi(topic);
+      const map = realPayload
+        ? buildArchitectureMapFromPayload(topic, realPayload)
+        : await generateArchitectureMap(topic);
+
+      setMaps((prev) => [...prev, map]);
+      setActiveMapId(map.id);
+
+      if (realPayload) {
+        const zenith = buildZenithFromPayload(topic, realPayload);
+        setZenithsBySlug((prev) => (prev[map.slug] ? prev : { ...prev, [map.slug]: zenith }));
+      } else {
+        void ensureZenith(topic);
+      }
+      void ensureImplementations(topic);
+      return map;
+    },
+    [ensureZenith, ensureImplementations],
+  );
 
   const toggleNode = useCallback(async (mapId: string, nodeId: string) => {
     const map = maps.find((m) => m.id === mapId);
@@ -64,59 +114,93 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     }
   }, [maps]);
 
-  const startChallenge = useCallback(async (subtopicLabel: string) => {
-    const challenge = await generateChallenge(subtopicLabel);
-    const run: ChallengeRun = {
-      id: makeId("run"),
-      challenge,
-      stageStates: challenge.stages.map((s) => ({
-        stageId: s.id,
-        status: "pending",
-        pickedLabel: null,
-        consequence: null,
-        warning: null,
-        clean: null,
-      })),
-      finished: false,
-      clean: true,
-      updatedAt: new Date().toISOString(),
-    };
-    setChallenges((prev) => [...prev, run]);
+  const startImplementationRun = useCallback(async (implementation: Implementation, totalIterations: number) => {
+    const run = await buildImplementationRun(implementation, totalIterations);
+    setImplementationRuns((prev) => [...prev, run]);
     return run;
   }, []);
 
-  const answerStage = useCallback((runId: string, stageId: string, choiceLabel: string) => {
-    setChallenges((prev) =>
+  const submitIterationPractice = useCallback((runId: string, iterationIndex: number, choiceLabel: string) => {
+    setImplementationRuns((prev) =>
       prev.map((run) => {
         if (run.id !== runId) return run;
-        const stage = run.challenge.stages.find((s) => s.id === stageId);
-        const choice = stage?.choices.find((c) => c.label === choiceLabel);
-        if (!stage || !choice) return run;
+        const iterations = run.iterations.map((it) => {
+          if (it.index !== iterationIndex) return it;
+          const choice = it.practice.choices.find((c) => c.label === choiceLabel);
+          if (!choice) return it;
+          return {
+            ...it,
+            pickedLabel: choice.label,
+            practiceConsequence: choice.consequence,
+            practiceWarning: choice.warning,
+            practiceClean: choice.clean,
+            status: "practiced" as const,
+          };
+        });
+        return { ...run, iterations, updatedAt: new Date().toISOString() };
+      }),
+    );
+  }, []);
 
-        const stageStates: StageState[] = run.stageStates.map((ss) =>
-          ss.stageId === stageId
-            ? {
-                stageId,
-                status: "answered",
-                pickedLabel: choice.label,
-                consequence: choice.consequence,
-                warning: choice.warning,
-                clean: choice.clean,
-              }
-            : ss,
-        );
+  const submitQuizAttempt = useCallback((runId: string, iterationIndex: number, answers: number[]) => {
+    setImplementationRuns((prev) =>
+      prev.map((run) => {
+        if (run.id !== runId) return run;
+        const iterations = run.iterations.map((it) => {
+          if (it.index !== iterationIndex) return it;
+          const correctCount = it.quiz.filter((q, i) => answers[i] === q.correctIndex).length;
+          const attempt: QuizAttempt = { answers, correctCount, attemptedAt: new Date().toISOString() };
+          return { ...it, attempts: [...it.attempts, attempt], status: "quizzed" as const };
+        });
+        return { ...run, iterations, updatedAt: new Date().toISOString() };
+      }),
+    );
+  }, []);
 
-        const finished = stageStates.every((ss) => ss.status === "answered");
-        const clean = stageStates.every((ss) => ss.clean !== false);
-
-        return { ...run, stageStates, finished, clean, updatedAt: new Date().toISOString() };
+  const advanceIteration = useCallback((runId: string) => {
+    setImplementationRuns((prev) =>
+      prev.map((run) => {
+        if (run.id !== runId) return run;
+        const nextIndex = run.currentIterationIndex + 1;
+        const finished = nextIndex >= run.totalIterations;
+        return {
+          ...run,
+          currentIterationIndex: finished ? run.currentIterationIndex : nextIndex,
+          finished,
+          updatedAt: new Date().toISOString(),
+        };
       }),
     );
   }, []);
 
   const value = useMemo(
-    () => ({ maps, challenges, createMap, toggleNode, startChallenge, answerStage }),
-    [maps, challenges, createMap, toggleNode, startChallenge, answerStage],
+    () => ({
+      maps,
+      activeMapId,
+      setActiveMapId,
+      zenithsBySlug,
+      implementationsBySlug,
+      implementationRuns,
+      createMap,
+      toggleNode,
+      startImplementationRun,
+      submitIterationPractice,
+      submitQuizAttempt,
+      advanceIteration,
+    }),
+    [
+      maps,
+      activeMapId,
+      zenithsBySlug,
+      implementationsBySlug,
+      implementationRuns,
+      createMap,
+      toggleNode,
+      startImplementationRun,
+      submitIterationPractice,
+      submitQuizAttempt,
+      advanceIteration,
+    ],
   );
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;

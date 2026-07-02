@@ -1,0 +1,68 @@
+"use client";
+
+import { useAppState } from "@/app/providers";
+import { slugify } from "@/lib/id";
+
+export function ZenithSidebar() {
+  const { maps, activeMapId, zenithsBySlug } = useAppState();
+  const activeMap = maps.find((m) => m.id === activeMapId) ?? maps[maps.length - 1];
+
+  if (!activeMap) {
+    return (
+      <aside className="lg:w-80 shrink-0">
+        <div className="lg:sticky lg:top-8 rounded-3xl border-2 border-dashed border-gray-200 p-6 text-center">
+          <div className="text-sm font-bold text-gray-400">✦ ZENITH REFERENCE</div>
+          <p className="mt-2 text-sm text-gray-400">
+            Generate your first map to unlock the zenith reference.
+          </p>
+        </div>
+      </aside>
+    );
+  }
+
+  const zenith = zenithsBySlug[slugify(activeMap.topic)];
+
+  return (
+    <aside className="lg:w-80 shrink-0">
+      <div className="lg:sticky lg:top-8 rounded-3xl border-2 border-amber-200/70 bg-gradient-to-b from-amber-50/60 to-white p-6 shadow-[0_0_0_3px_rgba(217,119,6,0.06)]">
+        <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-amber-800">
+          ✦ Zenith Reference
+        </div>
+
+        {!zenith ? (
+          <div className="mt-4 space-y-3 animate-pulse">
+            <div className="h-4 w-2/3 rounded bg-gray-200" />
+            <div className="h-3 w-full rounded bg-gray-100" />
+            <div className="h-3 w-5/6 rounded bg-gray-100" />
+            <div className="h-3 w-4/6 rounded bg-gray-100" />
+          </div>
+        ) : (
+          <div className="mt-4">
+            <h3 className="text-lg font-extrabold leading-snug">{zenith.topic}</h3>
+            <p className="text-sm text-gray-500 italic mt-0.5">{zenith.tagline}</p>
+
+            <div className="mt-5 flex flex-col gap-5">
+              {Array.from(new Set(zenith.nodes.map((n) => n.phaseTitle))).map((phaseTitle) => (
+                <div key={phaseTitle}>
+                  <div className="text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-2">
+                    {phaseTitle}
+                  </div>
+                  <ul className="flex flex-col gap-2.5">
+                    {zenith.nodes
+                      .filter((n) => n.phaseTitle === phaseTitle)
+                      .map((node) => (
+                        <li key={node.id} className="text-sm">
+                          <div className="font-semibold text-gray-800">{node.label}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">{node.insight}</div>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </aside>
+  );
+}

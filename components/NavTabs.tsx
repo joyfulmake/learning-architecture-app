@@ -12,9 +12,11 @@ export function NavTabs() {
   const pathname = usePathname();
 
   return (
-    <header className="border-b border-gray-200">
-      <div className="mx-auto max-w-5xl px-6 py-5 flex items-center gap-10">
-        <span className="text-xl font-extrabold tracking-tight">Learning Architecture</span>
+    <header className="border-b border-gray-200 bg-gradient-to-b from-white to-gray-50/60">
+      <div className="mx-auto max-w-6xl px-6 py-5 flex items-center gap-10">
+        <span className="text-xl font-extrabold tracking-tight">
+          Learning <span className="text-green-600">Architecture</span>
+        </span>
         <nav className="flex gap-2">
           {TABS.map((tab) => {
             const active = pathname?.startsWith(tab.href);
