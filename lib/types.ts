@@ -1,17 +1,37 @@
+// A user's own captured addition to any node, phase, or zenith node. Persisted
+// in app state (and, once exported, in the offline export's own storage) so it
+// survives independent of whether the map was ever exported.
+export interface Note {
+  id: string;
+  text: string;
+  createdAt: string;
+}
+
 export interface ArchitecturePhase {
   id: string;
   title: string;
   summary: string;
+  notes: Note[];
 }
 
 export interface ArchitectureNode {
   id: string;
   phaseId: string;
   label: string;
-  description: string;
+  what: string;
+  why: string;
+  how: string;
+  equation: string;
+  connection: string;
   prereqIds: string[];
   completed: boolean;
   completedAt: string | null;
+  notes: Note[];
+}
+
+export interface ClarifyingQuestion {
+  question: string;
+  options: string[];
 }
 
 export interface NodeReference {
@@ -38,7 +58,10 @@ export interface ZenithNode {
   id: string;
   phaseTitle: string;
   label: string;
+  how: string;
+  equation: string;
   insight: string;
+  notes: Note[];
 }
 
 export interface ZenithReference {

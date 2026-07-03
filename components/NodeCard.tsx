@@ -1,6 +1,7 @@
 "use client";
 
 import type { ArchitectureNode, NodeReference, NodeStatus } from "@/lib/types";
+import { NoteCapture } from "./NoteCapture";
 
 const STATUS_STYLES: Record<NodeStatus, string> = {
   locked: "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed",
@@ -13,11 +14,13 @@ export function NodeCard({
   status,
   references,
   onToggle,
+  onAddNote,
 }: {
   node: ArchitectureNode;
   status: NodeStatus;
   references: NodeReference[] | undefined;
   onToggle: () => void;
+  onAddNote: (text: string) => void;
 }) {
   return (
     <div id={`node-${node.id}`} className={`rounded-2xl border-2 p-4 transition ${STATUS_STYLES[status]}`}>
@@ -29,9 +32,31 @@ export function NodeCard({
           onChange={onToggle}
           className="mt-1 h-4 w-4 accent-green-600"
         />
-        <div>
+        <div className="min-w-0">
           <div className="font-bold text-base leading-snug">{node.label}</div>
-          <div className="text-sm text-gray-600 mt-1">{node.description}</div>
+          {node.connection && (
+            <p className="text-xs text-gray-500 italic mt-1">{node.connection}</p>
+          )}
+          <dl className="mt-2 space-y-1.5 text-sm">
+            <div>
+              <dt className="inline text-[11px] font-bold uppercase tracking-wide text-gray-400">What </dt>
+              <dd className="inline text-gray-700">{node.what}</dd>
+            </div>
+            <div>
+              <dt className="inline text-[11px] font-bold uppercase tracking-wide text-gray-400">Why </dt>
+              <dd className="inline text-gray-700">{node.why}</dd>
+            </div>
+            <div>
+              <dt className="inline text-[11px] font-bold uppercase tracking-wide text-gray-400">How </dt>
+              <dd className="inline text-gray-700">{node.how}</dd>
+            </div>
+          </dl>
+
+          {node.equation && (
+            <div className="mt-2 rounded-lg bg-gray-900 px-3 py-2 font-mono text-xs text-green-300 overflow-x-auto">
+              {node.equation}
+            </div>
+          )}
         </div>
       </label>
 
@@ -58,6 +83,10 @@ export function NodeCard({
           )}
         </div>
       )}
+
+      <div className="pl-7">
+        <NoteCapture notes={node.notes} onAdd={onAddNote} compact />
+      </div>
     </div>
   );
 }

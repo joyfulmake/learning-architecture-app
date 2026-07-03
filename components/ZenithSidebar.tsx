@@ -2,9 +2,10 @@
 
 import { useAppState } from "@/app/providers";
 import { slugify } from "@/lib/id";
+import { NoteCapture } from "./NoteCapture";
 
 export function ZenithSidebar() {
-  const { maps, activeMapId, zenithsBySlug } = useAppState();
+  const { maps, activeMapId, zenithsBySlug, addZenithNodeNote } = useAppState();
   const activeMap = maps.find((m) => m.id === activeMapId) ?? maps[maps.length - 1];
 
   if (!activeMap) {
@@ -53,7 +54,18 @@ export function ZenithSidebar() {
                       .map((node) => (
                         <li key={node.id} className="text-sm">
                           <div className="font-semibold text-gray-800">{node.label}</div>
-                          <div className="text-xs text-gray-500 mt-0.5">{node.insight}</div>
+                          <div className="text-xs text-gray-600 mt-0.5">{node.how}</div>
+                          {node.equation && (
+                            <div className="mt-1 rounded-md bg-gray-900 px-2 py-1 font-mono text-[11px] text-green-300 overflow-x-auto">
+                              {node.equation}
+                            </div>
+                          )}
+                          <div className="text-xs text-amber-700 italic mt-0.5">{node.insight}</div>
+                          <NoteCapture
+                            notes={node.notes}
+                            onAdd={(text) => addZenithNodeNote(zenith.topicSlug, node.id, text)}
+                            compact
+                          />
                         </li>
                       ))}
                   </ul>

@@ -36,7 +36,7 @@ export function ImplementationPicker({
                   : "border-gray-200 hover:border-gray-400"
               }`}
             >
-              <div className="font-bold text-sm">{impl.title}</div>
+              <div className="font-bold text-sm capitalize">{impl.angle}</div>
               <div className="text-xs text-gray-500 mt-1">{impl.blurb}</div>
             </button>
           );

@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import { slugify } from "@/lib/id";
+import { makeId, slugify } from "@/lib/id";
 import {
   buildImplementationRun,
   generateArchitectureMap,
@@ -13,9 +13,11 @@ import {
   buildArchitectureMapFromPayload,
   buildZenithFromPayload,
   tryGenerateArchitectureViaApi,
+  tryGetClarifyingQuestions,
 } from "@/lib/realGenerate";
 import type {
   ArchitectureMap,
+  ClarifyingQuestion,
   Implementation,
   ImplementationRun,
   QuizAttempt,
@@ -29,8 +31,12 @@ interface AppState {
   zenithsBySlug: Record<string, ZenithReference>;
   implementationsBySlug: Record<string, Implementation[]>;
   implementationRuns: ImplementationRun[];
-  createMap: (topic: string) => Promise<ArchitectureMap>;
+  getClarifyingQuestions: (topic: string) => Promise<ClarifyingQuestion[] | null>;
+  createMap: (topic: string, context?: string) => Promise<ArchitectureMap>;
   toggleNode: (mapId: string, nodeId: string) => Promise<void>;
+  addNodeNote: (mapId: string, nodeId: string, text: string) => void;
+  addPhaseNote: (mapId: string, phaseId: string, text: string) => void;
+  addZenithNodeNote: (topicSlug: string, zenithNodeId: string, text: string) => void;
   startImplementationRun: (implementation: Implementation, totalIterations: number) => Promise<ImplementationRun>;
   submitIterationPractice: (runId: string, iterationIndex: number, choiceLabel: string) => void;
   submitQuizAttempt: (runId: string, iterationIndex: number, answers: number[]) => void;
@@ -58,9 +64,15 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setImplementationsBySlug((prev) => (prev[slug] ? prev : { ...prev, [slug]: implementations }));
   }, []);
 
+  const getClarifyingQuestions = useCallback(async (topic: string) => {
+    const result = await tryGetClarifyingQuestions(topic);
+    if (!result || !result.needsClarification || result.questions.length === 0) return null;
+    return result.questions.slice(0, 3);
+  }, []);
+
   const createMap = useCallback(
-    async (topic: string) => {
-      const realPayload = await tryGenerateArchitectureViaApi(topic);
+    async (topic: string, context = "") => {
+      const realPayload = await tryGenerateArchitectureViaApi(topic, context);
       const map = realPayload
         ? buildArchitectureMapFromPayload(topic, realPayload)
         : await generateArchitectureMap(topic);
@@ -113,6 +125,57 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       );
     }
   }, [maps]);
+
+  const addNodeNote = useCallback((mapId: string, nodeId: string, text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    const note = { id: makeId("note"), text: trimmed, createdAt: new Date().toISOString() };
+    setMaps((prev) =>
+      prev.map((m) =>
+        m.id !== mapId
+          ? m
+          : {
+              ...m,
+              nodes: m.nodes.map((n) => (n.id !== nodeId ? n : { ...n, notes: [...n.notes, note] })),
+              updatedAt: new Date().toISOString(),
+            },
+      ),
+    );
+  }, []);
+
+  const addPhaseNote = useCallback((mapId: string, phaseId: string, text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    const note = { id: makeId("note"), text: trimmed, createdAt: new Date().toISOString() };
+    setMaps((prev) =>
+      prev.map((m) =>
+        m.id !== mapId
+          ? m
+          : {
+              ...m,
+              phases: m.phases.map((p) => (p.id !== phaseId ? p : { ...p, notes: [...p.notes, note] })),
+              updatedAt: new Date().toISOString(),
+            },
+      ),
+    );
+  }, []);
+
+  const addZenithNodeNote = useCallback((topicSlug: string, zenithNodeId: string, text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    const note = { id: makeId("note"), text: trimmed, createdAt: new Date().toISOString() };
+    setZenithsBySlug((prev) => {
+      const zenith = prev[topicSlug];
+      if (!zenith) return prev;
+      return {
+        ...prev,
+        [topicSlug]: {
+          ...zenith,
+          nodes: zenith.nodes.map((n) => (n.id !== zenithNodeId ? n : { ...n, notes: [...n.notes, note] })),
+        },
+      };
+    });
+  }, []);
 
   const startImplementationRun = useCallback(async (implementation: Implementation, totalIterations: number) => {
     const run = await buildImplementationRun(implementation, totalIterations);
@@ -181,8 +244,12 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       zenithsBySlug,
       implementationsBySlug,
       implementationRuns,
+      getClarifyingQuestions,
       createMap,
       toggleNode,
+      addNodeNote,
+      addPhaseNote,
+      addZenithNodeNote,
       startImplementationRun,
       submitIterationPractice,
       submitQuizAttempt,
@@ -194,8 +261,12 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       zenithsBySlug,
       implementationsBySlug,
       implementationRuns,
+      getClarifyingQuestions,
       createMap,
       toggleNode,
+      addNodeNote,
+      addPhaseNote,
+      addZenithNodeNote,
       startImplementationRun,
       submitIterationPractice,
       submitQuizAttempt,

@@ -16,11 +16,25 @@ Next phase (Phase 2) stands up the Convex schema and moves state out of context 
 
 ## Architecture map generation: real, with a mock fallback
 
-`app/api/generate-map/route.ts` is a server-only Next.js Route Handler that calls Claude (`claude-opus-4-8`, adaptive thinking, structured output via `output_config.format` so the JSON is schema-guaranteed, not regex-extracted) with a senior-architect/specialist persona (`lib/prompts.ts`). This was pulled forward from Phase 4 (which specs a Convex action instead) specifically because no deterministic template can produce genuinely technical, logically accurate content for an arbitrary topic — that's the actual fix for "this content isn't technical/logical enough," not more mock categories.
+`app/api/generate-map/route.ts` is a server-only Next.js Route Handler that calls Claude (`claude-opus-4-8`, adaptive thinking, `effort: "high"`, structured output via `output_config.format` so the JSON is schema-guaranteed, not regex-extracted) with a senior-architect/specialist persona (`lib/prompts.ts`). This was pulled forward from Phase 4 (which specs a Convex action instead) specifically because no deterministic template can produce genuinely technical, logically accurate content for an arbitrary topic — that's the actual fix for "this content isn't technical/logical enough," not more mock categories.
+
+Every `ArchitectureNode` carries four separate fields, `what` / `why` / `how` / (on `ZenithNode`) `insight`, instead of one flat description — this was a direct fix for real generation output reading as "theoretical, just verbiage." The persona prompt explicitly instructs the model to scale technical depth to what the topic actually demands (grade-school topic stays plain and correct; a graduate/research-level topic goes all the way to real mechanisms, numbers, and named techniques) and to make depth grow across the map's 4 phases (fundamentals → real practice → expert tradeoffs → frontier). The mock fallback (`lib/mockGenerate.ts`) mirrors the same four-field shape with hand-written content so the type contract holds and the UI looks the same either way, but it's still fixed prose per category, not depth-calibrated to an arbitrary topic — that calibration is only real for the live-generation path.
 
 Requires `ANTHROPIC_API_KEY` in `.env.local` (gitignored, never commit a real key). **Without a key configured, the app still works** — `lib/realGenerate.ts`'s `tryGenerateArchitectureViaApi()` returns `null` on any failure (no key, network error, malformed response) and `app/providers.tsx`'s `createMap` falls back to the deterministic mock generator. Same real API response seeds both the architecture map and the zenith sidebar (one call, two consistent views) — don't split that into two calls.
 
 Only the architecture map's generation was pulled forward. `generateReferences`, `generateImplementations`, and the Challenges iteration content (`buildIterationPractice`, `buildQuiz`) are still the Phase 1 mock stub — extending real generation to those is a reasonable next step but wasn't done here, don't assume it already happened.
+
+### Real dependency links, not positional pairing
+
+Early versions computed `prereqIds` by pairing node index N in phase P with node index N in phase P-1 — purely positional, no actual logical relationship, which read as "no meaningful sequential logic" because the arrows genuinely weren't meaningful. Fixed: the generation schema now requires each node to include `dependsOn`, an array of the *exact* label strings of specific earlier-phase nodes it genuinely depends on (model's own reasoning, phase 1 nodes always empty). `lib/realGenerate.ts`'s `buildArchitectureMapFromPayload` resolves those labels to node ids via a label-to-id map built strictly phase by phase, so a node can only ever resolve to something from an earlier phase. If you touch this, don't reintroduce index-based pairing — it looks fine in code and produces garbage dependency graphs.
+
+### Clarifying questions before generation
+
+`app/api/clarify-topic/route.ts` is a second, lightweight Claude call (same key/persona/fallback discipline as generate-map, smaller `max_tokens`) that judges whether the raw typed topic is genuinely ambiguous before committing to a full 4-phase generation. If so, it returns up to 3 short questions with 2-4 options each; `app/architecture/page.tsx` shows them via `ClarifyingQuestions` before generating, and the answers get serialized into a `context` string threaded into the main generation prompt. If the topic is already clear, or the clarify call fails/no key, it skips straight to generation exactly like before — this is strictly additive, never a required step.
+
+### Label repetition
+
+Node/zenith labels no longer get a mechanical `"${topic}: "` prefix — that was 9-12x literal repetition of whatever the user typed, which read as templated, not intelligent. The persona prompt now explicitly tells the model the raw input is "intent to interpret, not a label to echo back," and every label must stand alone as a real heading. Don't reintroduce topic-prefixing on node labels.
 
 ## Stack (target, full spec)
 
