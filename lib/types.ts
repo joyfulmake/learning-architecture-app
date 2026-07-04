@@ -53,6 +53,16 @@ export interface ArchitectureMap {
 
 export type NodeStatus = "locked" | "ready" | "completed";
 
+// Leitner-box style spaced repetition state for one zenith node. boxLevel 0
+// means never reinforced (a genuine gap); 1-5 are increasing review intervals.
+// See lib/spacedRepetition.ts for the scheduling logic that produces this.
+export interface ReinforcementState {
+  boxLevel: number;
+  timesReinforced: number;
+  lastPracticedAt: string | null;
+  dueAt: string | null;
+}
+
 // Zenith reference — persistent sidebar content, one per topic, non-interactive
 export interface ZenithNode {
   id: string;
@@ -62,6 +72,7 @@ export interface ZenithNode {
   equation: string;
   insight: string;
   notes: Note[];
+  reinforcement: ReinforcementState;
 }
 
 export interface ZenithReference {

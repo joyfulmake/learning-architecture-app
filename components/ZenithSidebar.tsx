@@ -2,7 +2,26 @@
 
 import { useAppState } from "@/app/providers";
 import { slugify } from "@/lib/id";
+import { gapState } from "@/lib/spacedRepetition";
+import type { ZenithNode } from "@/lib/types";
 import { NoteCapture } from "./NoteCapture";
+
+const GAP_DOT_CLASS: Record<ReturnType<typeof gapState>, string> = {
+  gap: "bg-gray-300",
+  due: "bg-amber-500",
+  fresh: "bg-green-500",
+};
+
+const GAP_LABEL: Record<ReturnType<typeof gapState>, string> = {
+  gap: "Not yet practiced",
+  due: "Due for review",
+  fresh: "Recently reinforced",
+};
+
+function GapDot({ node }: { node: ZenithNode }) {
+  const state = gapState(node.reinforcement);
+  return <span className={`inline-block h-2 w-2 rounded-full ${GAP_DOT_CLASS[state]}`} title={GAP_LABEL[state]} />;
+}
 
 export function ZenithSidebar() {
   const { maps, activeMapId, zenithsBySlug, addZenithNodeNote } = useAppState();
@@ -42,6 +61,17 @@ export function ZenithSidebar() {
             <h3 className="text-lg font-extrabold leading-snug">{zenith.topic}</h3>
             <p className="text-sm text-gray-500 italic mt-0.5">{zenith.tagline}</p>
 
+            {(() => {
+              const fresh = zenith.nodes.filter((n) => gapState(n.reinforcement) === "fresh").length;
+              const due = zenith.nodes.filter((n) => gapState(n.reinforcement) === "due").length;
+              return (
+                <p className="mt-3 text-[11px] font-bold uppercase tracking-wide text-gray-400">
+                  {fresh} of {zenith.nodes.length} reinforced
+                  {due > 0 && <span className="text-amber-600"> · {due} due for review</span>}
+                </p>
+              );
+            })()}
+
             <div className="mt-5 flex flex-col gap-5">
               {Array.from(new Set(zenith.nodes.map((n) => n.phaseTitle))).map((phaseTitle) => (
                 <div key={phaseTitle}>
@@ -53,7 +83,10 @@ export function ZenithSidebar() {
                       .filter((n) => n.phaseTitle === phaseTitle)
                       .map((node) => (
                         <li key={node.id} className="text-sm">
-                          <div className="font-semibold text-gray-800">{node.label}</div>
+                          <div className="flex items-center gap-1.5">
+                            <GapDot node={node} />
+                            <div className="font-semibold text-gray-800">{node.label}</div>
+                          </div>
                           <div className="text-xs text-gray-600 mt-0.5">{node.how}</div>
                           {node.equation && (
                             <div className="mt-1 rounded-md bg-gray-900 px-2 py-1 font-mono text-[11px] text-green-300 overflow-x-auto">

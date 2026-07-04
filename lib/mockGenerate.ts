@@ -1,4 +1,5 @@
 import { makeId, slugify } from "./id";
+import { initialReinforcement } from "./spacedRepetition";
 import type {
   ArchitectureMap,
   Implementation,
@@ -872,6 +873,7 @@ export async function generateZenithReference(topic: string): Promise<ZenithRefe
       equation: "",
       insight: nodeTemplate.insight,
       notes: [],
+      reinforcement: initialReinforcement(),
     })),
   );
 

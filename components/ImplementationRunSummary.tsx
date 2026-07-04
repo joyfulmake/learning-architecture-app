@@ -1,5 +1,7 @@
 "use client";
 
+import { useAppState } from "@/app/providers";
+import { gapState } from "@/lib/spacedRepetition";
 import type { ImplementationRun } from "@/lib/types";
 
 export function ImplementationRunSummary({
@@ -11,6 +13,11 @@ export function ImplementationRunSummary({
   onPickAnother: () => void;
   onRunAgain: () => void;
 }) {
+  const { zenithsBySlug } = useAppState();
+  const zenith = zenithsBySlug[run.implementation.topicSlug];
+  const fresh = zenith?.nodes.filter((n) => gapState(n.reinforcement) === "fresh").length ?? 0;
+  const total = zenith?.nodes.length ?? 0;
+
   return (
     <div className="rounded-3xl border-2 border-green-300 bg-green-50/60 p-8 text-center shadow-[0_0_0_3px_rgba(22,163,74,0.1)]">
       <div className="text-sm font-extrabold uppercase tracking-wide text-green-700">
@@ -36,6 +43,12 @@ export function ImplementationRunSummary({
       <p className="text-sm text-gray-500 mt-1">
         {run.totalIterations} reps, {run.totalIterations} different factors, one shape building into instinct.
       </p>
+
+      {total > 0 && (
+        <p className="mt-3 text-xs font-bold uppercase tracking-wide text-amber-700">
+          {fresh} of {total} zenith points reinforced so far, check the sidebar for what&apos;s still open
+        </p>
+      )}
 
       <div className="mt-6 flex flex-wrap justify-center gap-3">
         <button

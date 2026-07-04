@@ -1,4 +1,5 @@
 import { makeId, slugify } from "./id";
+import { initialReinforcement } from "./spacedRepetition";
 import type { ArchitectureMap, ClarifyingQuestion, ZenithReference } from "./types";
 
 interface GeneratedNode {
@@ -177,6 +178,7 @@ export function buildZenithFromPayload(topic: string, payload: GeneratedMapPaylo
       equation: n.equation,
       insight: n.insight,
       notes: [],
+      reinforcement: initialReinforcement(),
     })),
   );
 

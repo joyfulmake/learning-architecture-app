@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { makeId, slugify } from "@/lib/id";
+import { pickNodeToReinforce, reinforce } from "@/lib/spacedRepetition";
 import {
   buildImplementationRun,
   generateArchitectureMap,
@@ -205,20 +206,49 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
+  // A completed quiz attempt is the "rep finished" event that drives the
+  // zenith's spaced-repetition scheduling: it reinforces whichever zenith node
+  // is currently the biggest gap (untouched, or most overdue for review), not
+  // a specific node tied to this implementation, since implementations aren't
+  // generated with an explicit link back to individual zenith nodes.
+  const reinforceZenithGap = useCallback((topicSlug: string, passed: boolean) => {
+    setZenithsBySlug((prev) => {
+      const zenith = prev[topicSlug];
+      if (!zenith || zenith.nodes.length === 0) return prev;
+      const targetId = pickNodeToReinforce(zenith.nodes);
+      if (!targetId) return prev;
+      return {
+        ...prev,
+        [topicSlug]: {
+          ...zenith,
+          nodes: zenith.nodes.map((n) =>
+            n.id !== targetId ? n : { ...n, reinforcement: reinforce(n.reinforcement, passed) },
+          ),
+        },
+      };
+    });
+  }, []);
+
   const submitQuizAttempt = useCallback((runId: string, iterationIndex: number, answers: number[]) => {
+    const run = implementationRuns.find((r) => r.id === runId);
+    const iteration = run?.iterations.find((it) => it.index === iterationIndex);
+    if (!run || !iteration) return;
+
+    const correctCount = iteration.quiz.filter((q, i) => answers[i] === q.correctIndex).length;
+    const attempt: QuizAttempt = { answers, correctCount, attemptedAt: new Date().toISOString() };
+
     setImplementationRuns((prev) =>
-      prev.map((run) => {
-        if (run.id !== runId) return run;
-        const iterations = run.iterations.map((it) => {
-          if (it.index !== iterationIndex) return it;
-          const correctCount = it.quiz.filter((q, i) => answers[i] === q.correctIndex).length;
-          const attempt: QuizAttempt = { answers, correctCount, attemptedAt: new Date().toISOString() };
-          return { ...it, attempts: [...it.attempts, attempt], status: "quizzed" as const };
-        });
-        return { ...run, iterations, updatedAt: new Date().toISOString() };
+      prev.map((r) => {
+        if (r.id !== runId) return r;
+        const iterations = r.iterations.map((it) =>
+          it.index !== iterationIndex ? it : { ...it, attempts: [...it.attempts, attempt], status: "quizzed" as const },
+        );
+        return { ...r, iterations, updatedAt: new Date().toISOString() };
       }),
     );
-  }, []);
+
+    reinforceZenithGap(run.implementation.topicSlug, correctCount / iteration.quiz.length >= 0.5);
+  }, [implementationRuns, reinforceZenithGap]);
 
   const advanceIteration = useCallback((runId: string) => {
     setImplementationRuns((prev) =>
