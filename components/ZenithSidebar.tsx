@@ -99,6 +99,12 @@ export function ZenithSidebar() {
                             </span>
                             <span className="text-xs text-gray-600">{node.behavior}</span>
                           </div>
+                          <div className="mt-0.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                              Connection{" "}
+                            </span>
+                            <span className="text-xs text-gray-600">{node.connection}</span>
+                          </div>
                           {node.equation && (
                             <div className="mt-1 rounded-md bg-gray-900 px-2 py-1 font-mono text-[11px] text-green-300 overflow-x-auto">
                               {node.equation}

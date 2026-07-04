@@ -864,20 +864,28 @@ export async function generateZenithReference(topic: string): Promise<ZenithRefe
   await delay(NETWORK_DELAY_MS);
 
   const category = classifyTopic(topic);
-  const nodes = category.phases.flatMap((template) =>
-    template.nodes.map((nodeTemplate) => ({
-      id: makeId("zenith"),
-      phaseTitle: template.title,
-      label: capitalize(nodeTemplate.label),
-      structure: nodeTemplate.what(topic),
-      behavior: nodeTemplate.how(topic),
-      equation: "",
-      marketImplementation: "",
-      insight: nodeTemplate.insight,
-      notes: [],
-      reinforcement: initialReinforcement(),
-    })),
-  );
+  const nodes: ZenithReference["nodes"] = [];
+  category.phases.forEach((template, phaseIndex) => {
+    const prevPhaseNodes = nodes.filter((n) => n.phaseTitle === category.phases[phaseIndex - 1]?.title);
+    template.nodes.forEach((nodeTemplate, nodeIndex) => {
+      const prereqNode = phaseIndex === 0 ? undefined : prevPhaseNodes[nodeIndex % prevPhaseNodes.length];
+      nodes.push({
+        id: makeId("zenith"),
+        phaseTitle: template.title,
+        label: capitalize(nodeTemplate.label),
+        structure: nodeTemplate.what(topic),
+        behavior: nodeTemplate.how(topic),
+        connection: prereqNode
+          ? `Assumes "${prereqNode.label}" is already solid before this goes further.`
+          : `A load bearing starting point, nothing in ${topic} precedes it.`,
+        equation: "",
+        marketImplementation: "",
+        insight: nodeTemplate.insight,
+        notes: [],
+        reinforcement: initialReinforcement(),
+      });
+    });
+  });
 
   return {
     topicSlug: slugify(topic),

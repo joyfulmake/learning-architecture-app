@@ -182,6 +182,7 @@ export function buildZenithFromPayload(topic: string, payload: GeneratedMapPaylo
       label: n.label,
       structure: n.structure,
       behavior: n.behavior,
+      connection: n.connection,
       equation: n.equation,
       marketImplementation: n.marketImplementation,
       insight: n.insight,

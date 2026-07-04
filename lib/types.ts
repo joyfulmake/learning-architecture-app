@@ -64,17 +64,20 @@ export interface ReinforcementState {
 }
 
 // Zenith reference — persistent sidebar content, one per topic, non-interactive.
-// "structure" and "behavior" are a deliberate split of the old single "how"
-// field: structure is what the thing is actually composed of and how those
-// parts connect, behavior is how it actually operates at runtime, in motion.
-// Conflating the two is exactly what made zenith content read as description
-// rather than a working model of the subject.
+// Every node is described through three deliberate lenses, the same triad any
+// real architecture diagram needs regardless of subject: "structure" (what
+// it's actually composed of, how the parts connect), "behavior" (how it
+// operates at runtime, in motion), and "connection" (the technical link to
+// what it depends on, why that link is real and not just sequencing). Zenith
+// content that collapses these into one blended field reads as description
+// instead of a working model of the subject.
 export interface ZenithNode {
   id: string;
   phaseTitle: string;
   label: string;
   structure: string;
   behavior: string;
+  connection: string;
   equation: string;
   marketImplementation: string;
   insight: string;
