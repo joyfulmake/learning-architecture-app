@@ -87,10 +87,29 @@ export function ZenithSidebar() {
                             <GapDot node={node} />
                             <div className="font-semibold text-gray-800">{node.label}</div>
                           </div>
-                          <div className="text-xs text-gray-600 mt-0.5">{node.how}</div>
+                          <div className="mt-0.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                              Structure{" "}
+                            </span>
+                            <span className="text-xs text-gray-600">{node.structure}</span>
+                          </div>
+                          <div className="mt-0.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                              Function{" "}
+                            </span>
+                            <span className="text-xs text-gray-600">{node.behavior}</span>
+                          </div>
                           {node.equation && (
                             <div className="mt-1 rounded-md bg-gray-900 px-2 py-1 font-mono text-[11px] text-green-300 overflow-x-auto">
                               {node.equation}
+                            </div>
+                          )}
+                          {node.marketImplementation && (
+                            <div className="mt-1 text-xs text-green-700">
+                              <span className="font-bold uppercase tracking-wide text-[10px] text-green-600">
+                                In the market now{" "}
+                              </span>
+                              {node.marketImplementation}
                             </div>
                           )}
                           <div className="text-xs text-amber-700 italic mt-0.5">{node.insight}</div>

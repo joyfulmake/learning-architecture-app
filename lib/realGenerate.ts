@@ -10,6 +10,9 @@ interface GeneratedNode {
   how: string;
   equation: string;
   connection: string;
+  structure: string;
+  behavior: string;
+  marketImplementation: string;
   insight: string;
 }
 interface GeneratedPhase {
@@ -45,6 +48,9 @@ function isValidPayload(value: unknown): value is GeneratedMapPayload {
         typeof node.how === "string" &&
         typeof node.equation === "string" &&
         typeof node.connection === "string" &&
+        typeof node.structure === "string" &&
+        typeof node.behavior === "string" &&
+        typeof node.marketImplementation === "string" &&
         typeof node.insight === "string"
       );
     });
@@ -174,8 +180,10 @@ export function buildZenithFromPayload(topic: string, payload: GeneratedMapPaylo
       id: makeId("zenith"),
       phaseTitle: p.title,
       label: n.label,
-      how: n.how,
+      structure: n.structure,
+      behavior: n.behavior,
       equation: n.equation,
+      marketImplementation: n.marketImplementation,
       insight: n.insight,
       notes: [],
       reinforcement: initialReinforcement(),

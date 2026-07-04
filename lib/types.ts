@@ -63,13 +63,20 @@ export interface ReinforcementState {
   dueAt: string | null;
 }
 
-// Zenith reference — persistent sidebar content, one per topic, non-interactive
+// Zenith reference — persistent sidebar content, one per topic, non-interactive.
+// "structure" and "behavior" are a deliberate split of the old single "how"
+// field: structure is what the thing is actually composed of and how those
+// parts connect, behavior is how it actually operates at runtime, in motion.
+// Conflating the two is exactly what made zenith content read as description
+// rather than a working model of the subject.
 export interface ZenithNode {
   id: string;
   phaseTitle: string;
   label: string;
-  how: string;
+  structure: string;
+  behavior: string;
   equation: string;
+  marketImplementation: string;
   insight: string;
   notes: Note[];
   reinforcement: ReinforcementState;

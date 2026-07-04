@@ -31,9 +31,24 @@ const MAP_SCHEMA = {
                 how: { type: "string" },
                 equation: { type: "string" },
                 connection: { type: "string" },
+                structure: { type: "string" },
+                behavior: { type: "string" },
+                marketImplementation: { type: "string" },
                 insight: { type: "string" },
               },
-              required: ["label", "dependsOn", "what", "why", "how", "equation", "connection", "insight"],
+              required: [
+                "label",
+                "dependsOn",
+                "what",
+                "why",
+                "how",
+                "equation",
+                "connection",
+                "structure",
+                "behavior",
+                "marketImplementation",
+                "insight",
+              ],
               additionalProperties: false,
             },
           },
@@ -69,6 +84,9 @@ For each node, fill in these fields:
 - "how": the actual mechanism, procedure, or technique, one to two sentences, spelled out concretely enough that a practitioner could act on it. Use real numbers, named techniques, tools, or steps wherever the subject actually has them. This is the field that must not be generic verbiage.
 - "equation": if this specific subtopic has a real, named equation, formula, quantitative relationship, or exact algorithmic step that a practitioner would actually write down or compute, put it here in clean plain notation (e.g. "F = ma", "P(A|B) = P(B|A)P(A) / P(B)", using unicode for exponents, subscripts, and greek letters where natural). If this subtopic is genuinely not the kind of thing that has a formula, an interpersonal or judgment-based subtopic for instance, leave this as an empty string, do not invent a fake equation just to fill the field.
 - "connection": one sentence making the logical thread explicit and specific, never generic. If dependsOn is non-empty, say concretely what breaks or becomes impossible in THIS node without the specific thing it depends on, so the link is causal, not sequencing dressed up as logic. If dependsOn is empty (a phase 1 node), say what larger question this node's foundation opens up later in the field, not "this is a fundamental concept."
+- "structure": what this concept is actually composed of and how those parts connect to each other, one to two sentences. This is the "what is it built from" view: the components, layers, or elements and their relationship to one another. Distinct from "what", which defines the concept; this describes its internal architecture.
+- "behavior": how this concept actually operates or behaves once it's running, in motion, under real conditions, one to two sentences. This is the "what does it actually do in real time" view: the dynamics, the sequence of events, the observable runtime behavior. Distinct from "how", which is the practitioner's procedure; this is the thing's own operation once set in motion.
+- "marketImplementation": name ONE specific, real, currently existing product, company, platform, or deployed system that is genuinely among the most advanced or promising real-world applications of this exact subtopic right now, to the best of your knowledge. Be concretely specific and named, never a generic category like "a cloud provider" or "modern smartphones". If you are not genuinely confident of a specific, real, current example for this exact subtopic, or naming one would just be a plausible-sounding guess, say so honestly in this field instead of inventing a fake name, for instance "no single named implementation stands out here, this is still primarily research/theory" is a legitimate answer. Flag explicitly if your knowledge of what's current may be dated.
 - "insight": one sharp, senior practitioner or working scientist level sentence, the kind of thing that separates someone who has actually done this for real from someone who has only read about it. This is the line that should make a real expert in the field feel this was written by one of their own, not by someone summarizing the subject from outside it.
 
 Also produce a top level "tagline": one sharp sentence capturing what true mastery of this specific subject actually looks like at its ceiling, the aspirational endpoint this whole map builds toward. Specific to this subject, never a generic phrase like "the reference shape, distilled."
