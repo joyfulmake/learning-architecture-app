@@ -48,6 +48,16 @@ Every completed quiz attempt in Challenges (`submitQuizAttempt` in `app/provider
 
 Every `ZenithNode` is described through the same three lenses regardless of topic: `structure` (what it's composed of), `behavior` (how it operates at runtime), and `connection` (the technical link to what it depends on). These aren't three unrelated fields, they're one architectural picture seen three ways, the same triad any real systems diagram needs (composition, behavior, connections), the same idea whether the topic is distributed caching or cell biology. The persona (`lib/prompts.ts`) explicitly tells the model to keep the three coherent as one thing per node, not fill them in independently. Don't reintroduce a blended single field here, and don't add topic-specific visual styling (this came up once as a literal request for a cyberpunk network diagram illustration, decided against, kept as text calibrated per topic instead).
 
+### Connection type, real-implementation grounding, and tone
+
+`connectionType` classifies every node's `connection` as exactly one of `"code"` (an actual implementation-level dependency, can't build or run this without the prerequisite), `"theory"` (a conceptual or mathematical foundation, can't correctly reason about this without it), or `"practice"` (an operational or deployment dependency that only bites once this is used for real, not in a clean theoretical treatment). Rendered as a small label before the connection sentence in both `NodeCard.tsx` and `ZenithSidebar.tsx`. The persona is told to pick honestly, not whichever sounds more impressive.
+
+`structure` must ground itself in a real, currently used implementation (a named codebase, production system, or published research architecture), not a generic abstract composition description, same honesty discipline as `marketImplementation`: say so plainly if no specific real one comes to mind, don't invent one.
+
+The persona also carries an explicit anti-monotone instruction: write with real, subject-specific motivation, not the flat encyclopedia register. The literal test in the prompt: if a node's sentence would still basically read the same with the subject swapped for an unrelated one, the specific charge is missing.
+
+Mock fallback always sets `connectionType: "theory"` uniformly (see `lib/mockGenerate.ts`), it has no real basis to classify code vs. practice for an arbitrary topic and guessing would be fake precision, real generation classifies it honestly per node.
+
 ### Label repetition
 
 Node/zenith labels no longer get a mechanical `"${topic}: "` prefix — that was 9-12x literal repetition of whatever the user typed, which read as templated, not intelligent. The persona prompt now explicitly tells the model the raw input is "intent to interpret, not a label to echo back," and every label must stand alone as a real heading. Don't reintroduce topic-prefixing on node labels.

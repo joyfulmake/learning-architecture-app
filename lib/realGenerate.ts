@@ -1,6 +1,8 @@
 import { makeId, slugify } from "./id";
 import { initialReinforcement } from "./spacedRepetition";
-import type { ArchitectureMap, ClarifyingQuestion, ZenithReference } from "./types";
+import type { ArchitectureMap, ClarifyingQuestion, ConnectionType, ZenithReference } from "./types";
+
+const CONNECTION_TYPES: ConnectionType[] = ["code", "theory", "practice"];
 
 interface GeneratedNode {
   label: string;
@@ -10,6 +12,7 @@ interface GeneratedNode {
   how: string;
   equation: string;
   connection: string;
+  connectionType: ConnectionType;
   structure: string;
   behavior: string;
   marketImplementation: string;
@@ -48,6 +51,7 @@ function isValidPayload(value: unknown): value is GeneratedMapPayload {
         typeof node.how === "string" &&
         typeof node.equation === "string" &&
         typeof node.connection === "string" &&
+        CONNECTION_TYPES.includes(node.connectionType) &&
         typeof node.structure === "string" &&
         typeof node.behavior === "string" &&
         typeof node.marketImplementation === "string" &&
@@ -151,6 +155,7 @@ export function buildArchitectureMapFromPayload(topic: string, payload: Generate
         how: n.how,
         equation: n.equation,
         connection: n.connection,
+        connectionType: n.connectionType,
         prereqIds,
         completed: false,
         completedAt: null,
@@ -183,6 +188,7 @@ export function buildZenithFromPayload(topic: string, payload: GeneratedMapPaylo
       structure: n.structure,
       behavior: n.behavior,
       connection: n.connection,
+      connectionType: n.connectionType,
       equation: n.equation,
       marketImplementation: n.marketImplementation,
       insight: n.insight,

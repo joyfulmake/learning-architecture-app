@@ -3,8 +3,14 @@
 import { useAppState } from "@/app/providers";
 import { slugify } from "@/lib/id";
 import { gapState } from "@/lib/spacedRepetition";
-import type { ZenithNode } from "@/lib/types";
+import type { ConnectionType, ZenithNode } from "@/lib/types";
 import { NoteCapture } from "./NoteCapture";
+
+const CONNECTION_TYPE_LABEL: Record<ConnectionType, string> = {
+  code: "Connection (code)",
+  theory: "Connection (theory)",
+  practice: "Connection (practice)",
+};
 
 const GAP_DOT_CLASS: Record<ReturnType<typeof gapState>, string> = {
   gap: "bg-gray-300",
@@ -101,7 +107,7 @@ export function ZenithSidebar() {
                           </div>
                           <div className="mt-0.5">
                             <span className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                              Connection{" "}
+                              {CONNECTION_TYPE_LABEL[node.connectionType]}{" "}
                             </span>
                             <span className="text-xs text-gray-600">{node.connection}</span>
                           </div>

@@ -14,6 +14,13 @@ export interface ArchitecturePhase {
   notes: Note[];
 }
 
+// What kind of dependency a node's "connection" actually is: an implementation-
+// level dependency (can't build or run this without that), a theoretical
+// foundation (can't correctly reason about this without understanding that
+// first), or a practical/deployment dependency (only bites once this is
+// actually used for real, not in theory).
+export type ConnectionType = "code" | "theory" | "practice";
+
 export interface ArchitectureNode {
   id: string;
   phaseId: string;
@@ -23,6 +30,7 @@ export interface ArchitectureNode {
   how: string;
   equation: string;
   connection: string;
+  connectionType: ConnectionType;
   prereqIds: string[];
   completed: boolean;
   completedAt: string | null;
@@ -78,6 +86,7 @@ export interface ZenithNode {
   structure: string;
   behavior: string;
   connection: string;
+  connectionType: ConnectionType;
   equation: string;
   marketImplementation: string;
   insight: string;

@@ -819,6 +819,7 @@ export async function generateArchitectureMap(topic: string): Promise<Architectu
         connection: prereqNode
           ? `Assumes "${prereqNode.label}" is already solid before this goes further.`
           : `A load bearing starting point, nothing in ${topic} precedes it.`,
+        connectionType: "theory",
         prereqIds,
         completed: false,
         completedAt: null,
@@ -859,6 +860,9 @@ export async function generateReferences(nodeLabel: string): Promise<NodeReferen
 // --- Zenith reference: the idealized, expert-level shape of a topic ---
 // Reuses the same per-category content as the architecture map, so the two stay
 // thematically consistent instead of drawing from separate, unrelated templates.
+// connectionType is always "theory" here: the mock has no real basis to tell
+// a code-level dependency from a practice-level one for an arbitrary topic,
+// and guessing would be fake precision. Real generation classifies it honestly.
 
 export async function generateZenithReference(topic: string): Promise<ZenithReference> {
   await delay(NETWORK_DELAY_MS);
@@ -878,6 +882,7 @@ export async function generateZenithReference(topic: string): Promise<ZenithRefe
         connection: prereqNode
           ? `Assumes "${prereqNode.label}" is already solid before this goes further.`
           : `A load bearing starting point, nothing in ${topic} precedes it.`,
+        connectionType: "theory",
         equation: "",
         marketImplementation: "",
         insight: nodeTemplate.insight,

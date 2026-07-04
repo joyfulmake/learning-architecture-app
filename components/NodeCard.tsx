@@ -1,12 +1,18 @@
 "use client";
 
-import type { ArchitectureNode, NodeReference, NodeStatus } from "@/lib/types";
+import type { ArchitectureNode, ConnectionType, NodeReference, NodeStatus } from "@/lib/types";
 import { NoteCapture } from "./NoteCapture";
 
 const STATUS_STYLES: Record<NodeStatus, string> = {
   locked: "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed",
   ready: "border-green-400 bg-gradient-to-br from-green-50 to-white shadow-[0_0_0_3px_rgba(22,163,74,0.12)] cursor-pointer",
   completed: "border-green-600 bg-gradient-to-br from-green-100 to-green-50 shadow-[0_0_0_3px_rgba(22,163,74,0.22)] cursor-pointer",
+};
+
+const CONNECTION_TYPE_LABEL: Record<ConnectionType, string> = {
+  code: "Code dependency",
+  theory: "Theory dependency",
+  practice: "Practice dependency",
 };
 
 export function NodeCard({
@@ -35,7 +41,12 @@ export function NodeCard({
         <div className="min-w-0">
           <div className="font-bold text-base leading-snug">{node.label}</div>
           {node.connection && (
-            <p className="text-xs text-gray-500 italic mt-1">{node.connection}</p>
+            <p className="text-xs text-gray-500 italic mt-1">
+              <span className="not-italic font-bold uppercase tracking-wide text-[10px] text-gray-400">
+                {CONNECTION_TYPE_LABEL[node.connectionType]}{" "}
+              </span>
+              {node.connection}
+            </p>
           )}
           <dl className="mt-2 space-y-1.5 text-sm">
             <div>
